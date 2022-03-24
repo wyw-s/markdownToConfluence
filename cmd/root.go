@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	lib "github.com/justmiles/go-markdown2confluence/lib"
+	lib "markdownToConfluence/lib"
 
 	"github.com/spf13/cobra"
 )
@@ -59,8 +59,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) {
 	rootCmd.Version = version
-	rootCmd.SetVersionTemplate(`{{with .Name}}{{printf "%s " .}}{{end}}{{printf "%s" .Version}}
-`)
+	rootCmd.SetVersionTemplate(`{{with .Name}}{{printf "%s " .}}{{end}}{{printf "%s" .Version}}`)
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

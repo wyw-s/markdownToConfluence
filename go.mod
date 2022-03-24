@@ -1,4 +1,4 @@
-module github.com/justmiles/go-markdown2confluence
+module markdownToConfluence
 
 go 1.12
 

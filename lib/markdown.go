@@ -18,7 +18,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 
-	e "github.com/justmiles/go-markdown2confluence/lib/extension"
+	e "markdownToConfluence/lib/extension"
 )
 
 const (
@@ -77,6 +77,21 @@ func (m *Markdown2Confluence) SourceEnvironmentVariables() {
 	s = os.Getenv("CONFLUENCE_ENDPOINT")
 	if s != "" {
 		m.Endpoint = s
+	}
+
+	s = os.Getenv("CONFLUENCE_SPACE")
+	if s != "" {
+		m.Space = s
+	}
+
+	s = os.Getenv("CONFLUENCE_PARENT")
+	if s != "" {
+		m.Parent = s
+	}
+
+	slice := []string{os.Getenv("CONFLUENCE_FOLDER_NAME")}
+	if slice[0] != "" {
+		m.SourceMarkdown = slice
 	}
 }
 
@@ -168,10 +183,10 @@ func (m *Markdown2Confluence) Run() []error {
 
 						if strings.HasSuffix(path, "README.md") {
 							tempTitle = strings.Split(path, "/")[len(strings.Split(path, "/"))-2]
-							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.Dir(strings.TrimPrefix(filepath.ToSlash(path), filepath.ToSlash(f))), "/"), "."), tempTitle)
+							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(path, f))), "/"), "."), tempTitle)
 						} else {
 							tempTitle = strings.TrimSuffix(filepath.Base(path), ".md")
-							tempParents = deleteFromSlice(strings.Split(filepath.Dir(strings.TrimPrefix(filepath.ToSlash(path), filepath.ToSlash(f))), "/"), ".")
+							tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(path, f))), "/"), ".")
 						}
 
 						if m.UseDocumentTitle == true {

@@ -5,3 +5,6 @@ dist
 .vscode
 *.code-workspace
 .envrc
+/前端文档
+vendor
+.idea
