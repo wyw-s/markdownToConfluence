@@ -9,7 +9,7 @@ builds:
       - darwin
       - windows
       - linux
-    binary: markdown2confluence
+    binary: markdownToconfluence
 archives:
   - replacements:
       386: i386

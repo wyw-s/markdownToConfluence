@@ -1,44 +1,21 @@
-# markdown2confluence
+# markdownToconfluence
 
 Push markdown files to Confluence Cloud
 
+## 版权声明  如有侵权请告知我会马上删除
+
+本项目的原始作者是 [justmiles](https://github.com/justmiles) 。出于对需求的使用，原功能不能满足我的需求，所以本人在此项目上做了更改，添加的功能如下：
+
+- 修复了深层级文件夹上传时，无法生成对应的文件树。
+- 添加了对git变更的支持，只上传发生变化的文件。
+
+原始项目：[go-markdownToconfluence](https://github.com/justmiles/go-markdownToconfluence)
+
 ## Installation
-
-Download the [latest
-release](https://github.com/justmiles/go-markdown2confluence/releases)
-and add the binary in your local `PATH`
-
-- Linux
-
-  ```shell
-  curl -LO https://github.com/justmiles/go-markdown2confluence/releases/download/v3.1.2/go-markdown2confluence_3.1.2_linux_x86_64.tar.gz
-
-  sudo tar -xzvf go-markdown2confluence_3.1.2_linux_x86_64.tar.gz -C /usr/local/bin/ markdown2confluence
-  ```
-
-- OSX
-
-  ```shell
-  curl -LO https://github.com/justmiles/go-markdown2confluence/releases/download/v3.1.2/go-markdown2confluence_3.1.2_darwin_x86_64.tar.gz
-
-  sudo tar -xzvf go-markdown2confluence_3.1.2_darwin_x86_64.tar.gz -C /usr/local/bin/ markdown2confluence
-  ```
 
 - Windows
 
-  Download [the latest release](https://github.com/justmiles/go-markdown2confluence/releases/download/v3.1.2/go-markdown2confluence_3.1.2_windows_x86_64.tar.gz) and add to your system `PATH`
-
-## Use with Docker
-
-```shell
-docker run justmiles/markdown2confluence --version
-```
-
-### Build using docker
-
-```shell
-docker run -v $PWD:/src -w /src goreleaser/goreleaser --snapshot --skip-publish --rm-dist
-```
+  Download [the latest release](https://github.com/justmiles/go-markdownToconfluence/releases/download/v3.1.2/go-markdown2confluence_3.1.2_windows_x86_64.tar.gz) and add to your system `PATH`
 
 ## Environment Variables
 
@@ -54,14 +31,14 @@ For best practice we recommend you [authenticate using an API token](https://id.
 Push markdown files to Confluence Cloud
 
 Usage:
-  markdown2confluence [flags]
+  markdownToconfluence [flags]
 
 Flags:
   -d, --debug                Enable debug logging
   -e, --endpoint string      Confluence endpoint. (Alternatively set CONFLUENCE_ENDPOINT environment variable) (default "https://mydomain.atlassian.net/wiki")
   -x, --exclude strings      list of exclude file patterns (regex) that will be applied on markdown file paths
   -w, --hardwraps            Render newlines as <br />
-  -h, --help                 help for markdown2confluence
+  -h, --help                 help for markdownToconfluence
   -m, --modified-since int   Only upload files that have modifed in the past n minutes
       --parent string        Optional parent page to next content under
   -p, --password string      Confluence password. (Alternatively set CONFLUENCE_PASSWORD environment variable)
@@ -70,7 +47,7 @@ Flags:
   -t, --title string         Set the page title on upload (defaults to filename without extension)
       --use-document-title   Will use the Markdown document title (# Title) if available
   -u, --username string      Confluence username. (Alternatively set CONFLUENCE_USERNAME environment variable)
-      --version              version for markdown2confluence
+      --version              version for markdownToconfluence
 ```
 
 ## Examples
@@ -78,7 +55,7 @@ Flags:
 Upload a local directory of markdown files called `markdown-files` to Confluence.
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   markdown-files
 ```
@@ -86,7 +63,7 @@ markdown2confluence \
 Upload the same directory, but only those modified in the last 30 minutes. This is particurlarly useful for cron jobs/recurring one-way syncs.
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   --modified-since 30 \
   markdown-files
@@ -95,7 +72,7 @@ markdown2confluence \
 Upload a single file
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   markdown-files/test.md
 ```
@@ -103,7 +80,7 @@ markdown2confluence \
 Upload a directory of markdown files in space `MyTeamSpace` under the parent page `API Docs`
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   --parent 'API Docs' \
   markdown-files
@@ -112,7 +89,7 @@ markdown2confluence \
 Upload a directory of markdown files in space `MyTeamSpace` under a _nested_ parent page `Docs/API` and _exclude_ mardown files/directories that match `.*generated.*` or `.*temp.md`
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   --parent 'API/Docs' \
   --exclude '.*generated.*' \
@@ -123,7 +100,7 @@ markdown2confluence \
 Upload a directory of markdown files in space `MyTeamSpace` under the parent page  `API Docs` and use the markdown _document-title_ instead of the filname as document title (if available) in Confluence.
 
 ```shell
-markdown2confluence \
+markdownToconfluence \
   --space 'MyTeamSpace' \
   --parent 'API Docs' \
   --use-document-title \
