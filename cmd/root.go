@@ -38,6 +38,12 @@ var rootCmd = &cobra.Command{
 	Short: "Push markdown files to Confluence Cloud",
 	Run: func(rootCmd *cobra.Command, args []string) {
 		m.SourceMarkdown = args
+
+		// 如果用户没有主动的输入文件目录则查找git变更
+		if len(args) == 0 {
+			m.SourceMarkdown = lib.GitLogger()
+		}
+
 		// Validate the arguments
 		err := m.Validate()
 		if err != nil {

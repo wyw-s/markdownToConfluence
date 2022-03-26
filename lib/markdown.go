@@ -89,10 +89,10 @@ func (m *Markdown2Confluence) SourceEnvironmentVariables() {
 		m.Parent = s
 	}
 
-	slice := []string{os.Getenv("CONFLUENCE_FOLDER_NAME")}
-	if slice[0] != "" {
-		m.SourceMarkdown = slice
-	}
+	//slice := []string{os.Getenv("CONFLUENCE_FOLDER_NAME")}
+	//if slice[0] != "" {
+	//	m.SourceMarkdown = slice
+	//}
 }
 
 // Validate required configs are set
@@ -218,27 +218,29 @@ func (m *Markdown2Confluence) Run() []error {
 			}
 
 		} else {
-			md = MarkdownFile{
-				Path:  f,
-				Title: m.Title,
-			}
-
-			if md.Title == "" {
-				if m.UseDocumentTitle == true {
-					md.Title = getDocumentTitle(f)
+			if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
+				md = MarkdownFile{
+					Path:  f,
+					Title: m.Title,
 				}
+
 				if md.Title == "" {
-					md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
+					if m.UseDocumentTitle == true {
+						md.Title = getDocumentTitle(f)
+					}
+					if md.Title == "" {
+						md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
+					}
 				}
-			}
 
-			if m.Parent != "" {
-				parents := strings.Split(m.Parent, "/")
-				md.Parents = append(parents, md.Parents...)
-				md.Parents = deleteEmpty(md.Parents)
-			}
+				if m.Parent != "" {
+					parents := strings.Split(m.Parent, "/")
+					md.Parents = append(parents, md.Parents...)
+					md.Parents = deleteEmpty(md.Parents)
+				}
 
-			markdownFiles = append(markdownFiles, md)
+				markdownFiles = append(markdownFiles, md)
+			}
 		}
 
 	}
