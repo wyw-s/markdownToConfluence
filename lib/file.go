@@ -148,6 +148,33 @@ func (f *MarkdownFile) FindOrCreateAncestors(m *Markdown2Confluence) (ancestorID
 	return ancestorID, nil
 }
 
+// DeletePage 删除一个页面
+func (f *MarkdownFile) DeletePage(m *Markdown2Confluence) (urlPath string, err error) {
+	// search for existing page
+	contentResults, err := m.client.GetContent(&confluence.GetContentQueryParameters{
+		Title:    f.Title,
+		Spacekey: m.Space,
+		Limit:    1,
+		Type:     "page",
+		Expand:   []string{"version", "body.storage"},
+	})
+	if err != nil {
+		return urlPath, fmt.Errorf("Error checking for existing page: %s", err)
+	}
+
+	var content confluence.Content
+	// if page exists, delete it
+	if len(contentResults) > 0 {
+		content = contentResults[0]
+		err = m.client.DeleteContent(content)
+		if err != nil {
+			return urlPath, fmt.Errorf("Error delete page fail: %s", err)
+		}
+	}
+
+	return urlPath, nil
+}
+
 // ParentIndex caches parent page Ids for futures reference
 var ParentIndex = make(map[string]string)
 

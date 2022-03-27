@@ -45,6 +45,7 @@ type Markdown2Confluence struct {
 	Endpoint            string
 	Parent              string
 	SourceMarkdown      []string
+	DeleteMarkdown      []string
 	ExcludeFilePatterns []string
 	client              *confluence.Client
 	IsGitEnv            bool
@@ -143,6 +144,7 @@ func (m *Markdown2Confluence) IsExcluded(p string) bool {
 // Run the sync
 func (m *Markdown2Confluence) Run() []error {
 	var markdownFiles []MarkdownFile
+	var deleteMarkdownFiles []MarkdownFile
 	var now = time.Now()
 	m.CreateClient()
 
@@ -288,12 +290,43 @@ func (m *Markdown2Confluence) Run() []error {
 
 	}
 
+	for _, f := range m.DeleteMarkdown {
+		if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
+			var md MarkdownFile
+			md = MarkdownFile{
+				Path:  f,
+				Title: m.Title,
+			}
+
+			if md.Title == "" {
+				if m.UseDocumentTitle == true {
+					md.Title = getDocumentTitle(f)
+				}
+				if md.Title == "" {
+					md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
+				}
+			}
+
+			deleteMarkdownFiles = append(markdownFiles, md)
+		}
+	}
+	var errors []error
+
+	for _, markdownFile := range deleteMarkdownFiles {
+		var err error
+		_, err = markdownFile.DeletePage(m)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		fmt.Printf("已删除文件：%s: \n", markdownFile.Path)
+	}
+
 	var (
 		wg    = sync.WaitGroup{}
 		queue = make(chan MarkdownFile)
 	)
-
-	var errors []error
 
 	// Process the queue
 	for worker := 0; worker < Parallelism; worker++ {

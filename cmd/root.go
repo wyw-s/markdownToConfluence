@@ -42,7 +42,7 @@ var rootCmd = &cobra.Command{
 
 		// 如果用户没有主动的输入文件目录则查找git变更
 		if len(args) == 0 {
-			m.SourceMarkdown = lib.GitLogger()
+			m.SourceMarkdown, m.DeleteMarkdown = lib.GitLogger()
 			m.IsGitEnv = true
 		}
 
