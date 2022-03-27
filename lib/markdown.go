@@ -307,7 +307,7 @@ func (m *Markdown2Confluence) Run() []error {
 				}
 			}
 
-			deleteMarkdownFiles = append(markdownFiles, md)
+			deleteMarkdownFiles = append(deleteMarkdownFiles, md)
 		}
 	}
 	var errors []error

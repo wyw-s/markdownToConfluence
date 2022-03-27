@@ -59,7 +59,7 @@ func GitLogger() ([]string, []string) {
 
 	var uploadFiles []string
 
-	fmt.Printf("变更的文件列表：\n")
+	fmt.Printf("待同步的文件列表：(只同步md文件)\n")
 
 	for i, value := range fileList {
 		if strings.HasSuffix(value, "\"") && strings.HasPrefix(value, "\"") {
@@ -72,7 +72,7 @@ func GitLogger() ([]string, []string) {
 		fmt.Printf("%v: %s\n", i, fileList[i])
 	}
 
-	fmt.Printf("待同步的文件列表：(只同步md文件)\n")
+	fmt.Printf("---------------------------已同步至云端--------------------------\n")
 
 	return uploadFiles, deleteFiles
 }
