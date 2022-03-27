@@ -47,6 +47,8 @@ type Markdown2Confluence struct {
 	SourceMarkdown      []string
 	ExcludeFilePatterns []string
 	client              *confluence.Client
+	IsGitEnv            bool
+	GitSyncDir          string
 }
 
 // CreateClient returns a new markdown clietn
@@ -87,6 +89,11 @@ func (m *Markdown2Confluence) SourceEnvironmentVariables() {
 	s = os.Getenv("CONFLUENCE_PARENT")
 	if s != "" {
 		m.Parent = s
+	}
+
+	s = os.Getenv("CONFLUENCE_GIT_SYNC_DIR")
+	if s != "" {
+		m.GitSyncDir = s
 	}
 
 	//slice := []string{os.Getenv("CONFLUENCE_FOLDER_NAME")}
@@ -219,17 +226,53 @@ func (m *Markdown2Confluence) Run() []error {
 
 		} else {
 			if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
-				md = MarkdownFile{
-					Path:  f,
-					Title: m.Title,
-				}
 
-				if md.Title == "" {
-					if m.UseDocumentTitle == true {
-						md.Title = getDocumentTitle(f)
+				// 当前上传的文件属于gitchangelist
+				if m.IsGitEnv {
+					var tempTitle string
+					var tempParents []string
+
+					if strings.HasSuffix(f, "README.md") {
+						tempTitle = strings.Split(f, "/")[len(strings.Split(f, "/"))-2]
+						if m.GitSyncDir != "" {
+							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), "."), tempTitle)
+						} else {
+							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), "."), tempTitle)
+						}
+					} else {
+						tempTitle = strings.TrimSuffix(filepath.Base(f), ".md")
+						if m.GitSyncDir != "" {
+							tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), ".")
+						} else {
+							tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), ".")
+						}
 					}
+
+					if m.UseDocumentTitle == true {
+						doc_title := getDocumentTitle(f)
+						if doc_title != "" {
+							tempTitle = doc_title
+						}
+					}
+
+					md = MarkdownFile{
+						Path:    f,
+						Parents: tempParents,
+						Title:   tempTitle,
+					}
+				} else {
+					md = MarkdownFile{
+						Path:  f,
+						Title: m.Title,
+					}
+
 					if md.Title == "" {
-						md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
+						if m.UseDocumentTitle == true {
+							md.Title = getDocumentTitle(f)
+						}
+						if md.Title == "" {
+							md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
+						}
 					}
 				}
 
