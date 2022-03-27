@@ -72,7 +72,7 @@ func GitLogger() ([]string, []string) {
 		fmt.Printf("%v: %s\n", i, fileList[i])
 	}
 
-	fmt.Printf("---------------------------已同步至云端--------------------------\n")
+	fmt.Printf("---------------------------同步至云端--------------------------\n")
 
 	return uploadFiles, deleteFiles
 }

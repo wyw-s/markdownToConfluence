@@ -320,7 +320,7 @@ func (m *Markdown2Confluence) Run() []error {
 			continue
 		}
 
-		fmt.Printf("已删除文件：%s: \n", markdownFile.Path)
+		fmt.Printf("删除云端文件：%s \n", markdownFile.Path)
 	}
 
 	var (
@@ -364,7 +364,7 @@ func (m *Markdown2Confluence) queueProcessor(wg *sync.WaitGroup, queue *chan Mar
 		if err != nil {
 			*errors = append(*errors, fmt.Errorf("Unable to upload markdown file %s: \n\t%s", markdownFile.Path, err))
 		}
-		fmt.Printf("%s: %s\n", markdownFile.FormattedPath(), url)
+		fmt.Printf("已上传云端文件：%s %s %s\n", markdownFile.Path, markdownFile.FormattedPath(), url)
 	}
 }
 
