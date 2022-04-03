@@ -329,6 +329,39 @@ func (m *Markdown2Confluence) GitRun() []error {
 				md.Parents = deleteEmpty(md.Parents)
 			}
 
+			currentFileDir := filepath.Dir(f)
+
+		parentLabel:
+
+			if m.GitSyncDir != "" && currentFileDir != m.GitSyncDir {
+
+				names, _ := ReadDirNames(currentFileDir)
+
+				var hasFilePath bool = false
+
+				// 如果父级目录下没有文件，则删除父级
+				if names == nil || len(names) == 0 {
+					for _, v := range deleteMarkdownFiles {
+						if v.Path == currentFileDir {
+							hasFilePath = true
+							break
+						}
+					}
+
+					if !hasFilePath {
+						var parentDir = MarkdownFile{
+							Path:  currentFileDir,
+							Title: filepath.Base(currentFileDir),
+						}
+						deleteMarkdownFiles = append(deleteMarkdownFiles, parentDir)
+					}
+
+					currentFileDir = filepath.Dir(currentFileDir)
+
+					goto parentLabel
+				}
+			}
+
 			deleteMarkdownFiles = append(deleteMarkdownFiles, md)
 			continue
 		}
