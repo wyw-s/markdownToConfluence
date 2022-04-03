@@ -148,6 +148,92 @@ func (f *MarkdownFile) FindOrCreateAncestors(m *Markdown2Confluence) (ancestorID
 	return ancestorID, nil
 }
 
+// AddPage 新增一个页面
+func (f *MarkdownFile) AddPage(m *Markdown2Confluence) (urlPath string, err error) {
+	var ancestorID string
+	// Content of Wiki
+	dat, err := ioutil.ReadFile(f.Path)
+	if err != nil {
+		return urlPath, fmt.Errorf("Could not open file %s:\n\t%s", f.Path, err)
+	}
+
+	if m.Debug {
+		fmt.Println(f.Path)
+	}
+
+	wikiContent := string(dat)
+	var images []string
+	wikiContent, images, err = renderContent(f.Path, wikiContent, m.WithHardWraps)
+
+	if err != nil {
+		return urlPath, fmt.Errorf("unable to render content from %s: %s", f.Path, err)
+	}
+
+	if m.Debug {
+		fmt.Println("---- RENDERED CONTENT START ---------------------------------")
+		fmt.Println(wikiContent)
+		fmt.Println("---- RENDERED CONTENT END -----------------------------------")
+
+		for _, image := range images {
+			fmt.Printf("LOCAL IMAGE FOUND: %s\n", image)
+		}
+	}
+
+	// search for existing page
+	contentResults, err := m.client.GetContent(&confluence.GetContentQueryParameters{
+		Title:    f.Title,
+		Spacekey: m.Space,
+		Limit:    1,
+		Type:     "page",
+		Expand:   []string{"version", "body.storage"},
+	})
+	if err != nil {
+		return urlPath, fmt.Errorf("Error checking for existing page: %s", err)
+	}
+
+	if len(f.Parents) > 0 {
+		ancestorID, err = f.FindOrCreateAncestors(m)
+		if err != nil {
+			return urlPath, err
+		}
+	}
+
+	var currContentID string
+	// if page exists, 则不进行创建
+	if len(contentResults) > 0 {
+		return urlPath, fmt.Errorf("已存在同名文件：%s.md", f.Title)
+		// if page does not exist, create it
+	} else {
+		bp := confluence.CreateContentBodyParameters{}
+		bp.Title = f.Title
+		bp.Type = "page"
+		bp.Space.Key = m.Space
+		bp.Body.Storage.Representation = "storage"
+		bp.Body.Storage.Value = wikiContent
+
+		if ancestorID != "" {
+			bp.Ancestors = append(bp.Ancestors, Ancestor{
+				ID: ancestorID,
+			})
+		}
+
+		content, err := m.client.CreateContent(&bp, nil)
+		if err != nil {
+			return urlPath, fmt.Errorf("Error creating page: %s", err)
+		}
+		urlPath = m.client.Endpoint + content.Links.Tinyui
+		currContentID = content.ID
+	}
+
+	_, errors := m.client.AddUpdateAttachments(currContentID, images)
+	if len(errors) > 0 {
+		fmt.Println(errors)
+		err = errors[0]
+	}
+
+	return urlPath, err
+}
+
 // DeletePage 删除一个页面
 func (f *MarkdownFile) DeletePage(m *Markdown2Confluence) (urlPath string, err error) {
 	// search for existing page

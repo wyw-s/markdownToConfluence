@@ -28,6 +28,7 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&m.Since, "modified-since", "m", 0, "Only upload files that have modifed in the past n minutes")
 	rootCmd.PersistentFlags().StringVarP(&m.Title, "title", "t", "", "Set the page title on upload (defaults to filename without extension)")
 	rootCmd.PersistentFlags().StringVarP(&m.GitSyncDir, "git-sync-dir", "g", "", "Example Set the local synchronization directory")
+	rootCmd.PersistentFlags().StringVar(&m.Model, "model", "", "Is it based on git")
 	rootCmd.PersistentFlags().StringSliceVarP(&m.ExcludeFilePatterns, "exclude", "x", []string{}, "list of exclude file patterns (regex) for that will be applied on markdown file paths")
 	m.SourceEnvironmentVariables()
 
@@ -40,19 +41,24 @@ var rootCmd = &cobra.Command{
 	Run: func(rootCmd *cobra.Command, args []string) {
 		m.SourceMarkdown = args
 
-		// 如果用户没有主动的输入文件目录则查找git变更
-		if len(args) == 0 {
-			m.SourceMarkdown, m.DeleteMarkdown = lib.GitLogger()
-			m.IsGitEnv = true
-		}
-
 		// Validate the arguments
 		err := m.Validate()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		errors := m.Run()
+		var errors []error
+
+		if m.Model == "Git" {
+			fileList := lib.GetMarkdownFile(&m)
+			if fileList != nil {
+				m.SourceMarkdownFromGit = fileList
+				errors = m.GitRun()
+			}
+		} else {
+			errors = m.Run()
+		}
+
 		for _, err := range errors {
 			fmt.Println()
 			fmt.Println(err)

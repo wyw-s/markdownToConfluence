@@ -6,8 +6,12 @@ import (
 	"strings"
 )
 
-func GitLogger() ([]string, []string) {
+type MarkdownFileFromGit struct {
+	status string
+	path   string
+}
 
+func GetMarkdownFile(m *Markdown2Confluence) []MarkdownFileFromGit {
 	// 获取当前工作目录
 	workspaceDir, err := os.Getwd()
 
@@ -17,71 +21,114 @@ func GitLogger() ([]string, []string) {
 	}
 
 	fmt.Println()
-	fmt.Printf("当前工作目录路径：%s", workspaceDir)
+	fmt.Printf("当前工作目录路径：%s\n", workspaceDir)
 	fmt.Println()
 
 	// 检查返回值 workspace 是否为空 为空则表明工作区没有未提交的变更
-	workspace := RunGitCommand("git", "status", "--short")
+	workspaceFiles := RunGitCommand("git", "status", "--short")
 
-	if workspace == "" {
-		return []string{}, []string{}
+	if workspaceFiles == "" {
+		return nil
 	}
 
 	// 这里必须使文件先被跟踪
 	RunGitCommand("git", "add", ".")
 
-	// 获取更改的文件列表
-	changeFileList := RunGitCommand("git", "diff", "--name-only", "HEAD")
+	statusFileList := strings.Split(workspaceFiles, "\n")
 
-	statusFileList := RunGitCommand("git", "diff", "--name-status", "HEAD")
+	var uploadFileList []MarkdownFileFromGit
 
-	formatDeleteFiles := strings.Split(statusFileList, "\n")
-
-	// 获取删除的文件列表
-	var deleteFiles []string
-
-	for _, value := range formatDeleteFiles {
-		if strings.HasPrefix(value, "D") {
-			temp := strings.Split(value, "\t")
-			deleteFiles = append(deleteFiles, ConvertOctonaryUtf8(strings.Replace(temp[1], "\"", "", -1)))
+	for _, value := range statusFileList {
+		if value != "" {
+			uploadFileList = append(uploadFileList, ProcessGitFilePath(value, m)...)
 		}
 	}
 
-	if changeFileList == "" {
-		return []string{}, []string{}
+	if len(uploadFileList) == 0 {
+		fmt.Println("暂无同步的markdown文件")
+		return nil
 	}
 
-	fileList := strings.Split(changeFileList, "\n")
+	fmt.Printf("---------------------------正在同步...--------------------------\n")
 
-	if len(fileList) != 0 && fileList[len(fileList)-1] == "" {
-		fileList = fileList[:len(fileList)-1]
-	}
-
-	var uploadFiles []string
-
-	fmt.Printf("待同步的文件列表：(只同步md文件)\n")
-
-	for i, value := range fileList {
-		if strings.HasSuffix(value, "\"") && strings.HasPrefix(value, "\"") {
-			fileList[i] = ConvertOctonaryUtf8(strings.Replace(value, "\"", "", -1))
-		}
-		isExist := isValueInList(fileList[i], deleteFiles)
-		if !isExist {
-			uploadFiles = append(uploadFiles, fileList[i])
-		}
-		fmt.Printf("%v: %s\n", i, fileList[i])
-	}
-
-	fmt.Printf("---------------------------同步至云端--------------------------\n")
-
-	return uploadFiles, deleteFiles
+	return uploadFileList
 }
 
-func isValueInList(value string, list []string) bool {
-	for _, v := range list {
-		if v == value {
-			return true
+func ProcessGitFilePath(path string, m *Markdown2Confluence) []MarkdownFileFromGit {
+
+	path = strings.TrimSpace(path)
+
+	// M: 修改 R：重命名 D：删除 A: 新增 ?: 未跟踪的
+	var statusList = [5]string{"M", "R", "D", "A", "?"}
+	var markdownFiles []MarkdownFileFromGit
+
+	for _, code := range statusList {
+		if !strings.HasPrefix(path, code) {
+			continue
+		}
+		if strings.Contains(path, "->") {
+
+			var list = strings.Split(path, "->")
+
+			var st = MarkdownFileFromGit{
+				status: code,
+				path:   path,
+			}
+
+			for i, v := range list {
+
+				var str = strings.Trim(v, " ")
+
+				st.path = str
+
+				if i == 0 {
+					st.status = "D"
+				} else {
+					st.status = "A"
+				}
+
+				if strings.HasSuffix(str, "\"") {
+
+					firstIndex := strings.Index(str, "\"")
+					lastIndex := strings.LastIndex(str, "\"")
+
+					str = str[firstIndex+1 : lastIndex]
+
+					st.path = ConvertOctonaryUtf8(str)
+				} else if i == 0 {
+					st.path = v[strings.LastIndex(v, " "):len(v)]
+				}
+				if m.GitSyncDir != "" {
+					if strings.HasPrefix(st.path, m.GitSyncDir) {
+						markdownFiles = append(markdownFiles, st)
+					}
+				} else {
+					markdownFiles = append(markdownFiles, st)
+				}
+			}
+			return markdownFiles
+		} else {
+			var st = MarkdownFileFromGit{
+				status: code,
+				path:   path,
+			}
+			if strings.HasSuffix(path, "\"") {
+
+				firstIndex := strings.Index(path, "\"")
+				lastIndex := strings.LastIndex(path, "\"")
+
+				st.path = ConvertOctonaryUtf8(path[firstIndex+1 : lastIndex])
+			} else {
+				st.path = path[strings.LastIndex(path, " "):len(path)]
+			}
+			if m.GitSyncDir != "" {
+				if strings.HasPrefix(st.path, m.GitSyncDir) {
+					return append(markdownFiles, st)
+				}
+			} else {
+				return append(markdownFiles, st)
+			}
 		}
 	}
-	return false
+	return nil
 }

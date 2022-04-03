@@ -31,25 +31,26 @@ const (
 
 // Markdown2Confluence stores the settings for each run
 type Markdown2Confluence struct {
-	Space               string
-	Comment             string
-	Title               string
-	File                string
-	Ancestor            string
-	Debug               bool
-	UseDocumentTitle    bool
-	WithHardWraps       bool
-	Since               int
-	Username            string
-	Password            string
-	Endpoint            string
-	Parent              string
-	SourceMarkdown      []string
-	DeleteMarkdown      []string
-	ExcludeFilePatterns []string
-	client              *confluence.Client
-	IsGitEnv            bool
-	GitSyncDir          string
+	Space                 string
+	Comment               string
+	Title                 string
+	File                  string
+	Ancestor              string
+	Debug                 bool
+	UseDocumentTitle      bool
+	WithHardWraps         bool
+	Since                 int
+	Username              string
+	Password              string
+	Endpoint              string
+	Parent                string
+	SourceMarkdown        []string
+	SourceMarkdownFromGit []MarkdownFileFromGit
+	DeleteMarkdown        []string
+	ExcludeFilePatterns   []string
+	client                *confluence.Client
+	GitSyncDir            string
+	Model                 string
 }
 
 // CreateClient returns a new markdown clietn
@@ -97,6 +98,11 @@ func (m *Markdown2Confluence) SourceEnvironmentVariables() {
 		m.GitSyncDir = s
 	}
 
+	s = os.Getenv("CONFLUENCE_MODEL")
+	if s != "" {
+		m.Model = s
+	}
+
 	//slice := []string{os.Getenv("CONFLUENCE_FOLDER_NAME")}
 	//if slice[0] != "" {
 	//	m.SourceMarkdown = slice
@@ -120,6 +126,11 @@ func (m Markdown2Confluence) Validate() error {
 	if m.Endpoint == DefaultEndpoint {
 		return fmt.Errorf("--endpoint is not defined")
 	}
+
+	if m.Model == "Git" {
+		return nil
+	}
+
 	if len(m.SourceMarkdown) == 0 {
 		return fmt.Errorf("please pass a markdown file or directory of markdown files")
 	}
@@ -144,7 +155,6 @@ func (m *Markdown2Confluence) IsExcluded(p string) bool {
 // Run the sync
 func (m *Markdown2Confluence) Run() []error {
 	var markdownFiles []MarkdownFile
-	var deleteMarkdownFiles []MarkdownFile
 	var now = time.Now()
 	m.CreateClient()
 
@@ -199,9 +209,9 @@ func (m *Markdown2Confluence) Run() []error {
 						}
 
 						if m.UseDocumentTitle == true {
-							doc_title := getDocumentTitle(path)
-							if doc_title != "" {
-								tempTitle = doc_title
+							docTitle := getDocumentTitle(path)
+							if docTitle != "" {
+								tempTitle = docTitle
 							}
 						}
 
@@ -229,52 +239,17 @@ func (m *Markdown2Confluence) Run() []error {
 		} else {
 			if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
 
-				// 当前上传的文件属于gitchangelist
-				if m.IsGitEnv {
-					var tempTitle string
-					var tempParents []string
+				md = MarkdownFile{
+					Path:  f,
+					Title: m.Title,
+				}
 
-					if strings.HasSuffix(f, "README.md") {
-						tempTitle = strings.Split(f, "/")[len(strings.Split(f, "/"))-2]
-						if m.GitSyncDir != "" {
-							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), "."), tempTitle)
-						} else {
-							tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), "."), tempTitle)
-						}
-					} else {
-						tempTitle = strings.TrimSuffix(filepath.Base(f), ".md")
-						if m.GitSyncDir != "" {
-							tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), ".")
-						} else {
-							tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), ".")
-						}
-					}
-
+				if md.Title == "" {
 					if m.UseDocumentTitle == true {
-						doc_title := getDocumentTitle(f)
-						if doc_title != "" {
-							tempTitle = doc_title
-						}
+						md.Title = getDocumentTitle(f)
 					}
-
-					md = MarkdownFile{
-						Path:    f,
-						Parents: tempParents,
-						Title:   tempTitle,
-					}
-				} else {
-					md = MarkdownFile{
-						Path:  f,
-						Title: m.Title,
-					}
-
 					if md.Title == "" {
-						if m.UseDocumentTitle == true {
-							md.Title = getDocumentTitle(f)
-						}
-						if md.Title == "" {
-							md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
-						}
+						md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
 					}
 				}
 
@@ -290,38 +265,7 @@ func (m *Markdown2Confluence) Run() []error {
 
 	}
 
-	for _, f := range m.DeleteMarkdown {
-		if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
-			var md MarkdownFile
-			md = MarkdownFile{
-				Path:  f,
-				Title: m.Title,
-			}
-
-			if md.Title == "" {
-				if m.UseDocumentTitle == true {
-					md.Title = getDocumentTitle(f)
-				}
-				if md.Title == "" {
-					md.Title = strings.TrimSuffix(filepath.Base(f), ".md")
-				}
-			}
-
-			deleteMarkdownFiles = append(deleteMarkdownFiles, md)
-		}
-	}
 	var errors []error
-
-	for _, markdownFile := range deleteMarkdownFiles {
-		var err error
-		_, err = markdownFile.DeletePage(m)
-		if err != nil {
-			errors = append(errors, err)
-			continue
-		}
-
-		fmt.Printf("删除云端文件：%s \n", markdownFile.Path)
-	}
 
 	var (
 		wg    = sync.WaitGroup{}
@@ -356,6 +300,167 @@ func (m *Markdown2Confluence) Run() []error {
 	return errors
 }
 
+func (m *Markdown2Confluence) GitRun() []error {
+	var markdownFiles []MarkdownFile
+	var deleteMarkdownFiles []MarkdownFile
+	var addMarkdownFiles []MarkdownFile
+	m.CreateClient()
+
+	for _, value := range m.SourceMarkdownFromGit {
+		f := value.path
+		status := value.status
+		var md MarkdownFile
+		if status == "D" {
+			var tempParents []string
+			if m.GitSyncDir != "" {
+				tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), ".")
+			} else {
+				tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), ".")
+			}
+			md = MarkdownFile{
+				Path:    f,
+				Parents: tempParents,
+				Title:   strings.TrimSuffix(filepath.Base(f), ".md"),
+			}
+
+			if m.Parent != "" {
+				parents := strings.Split(m.Parent, "/")
+				md.Parents = append(parents, md.Parents...)
+				md.Parents = deleteEmpty(md.Parents)
+			}
+
+			deleteMarkdownFiles = append(deleteMarkdownFiles, md)
+			continue
+		}
+
+		file, err := os.Open(f)
+
+		defer file.Close()
+
+		if err != nil {
+			return []error{fmt.Errorf("Error opening file %s", err)}
+		}
+
+		_, err = file.Stat()
+		if err != nil {
+			return []error{fmt.Errorf("Error reading file meta %s", err)}
+		}
+
+		if strings.HasSuffix(f, ".md") && !m.IsExcluded(f) {
+
+			var tempTitle string
+			var tempParents []string
+
+			if strings.HasSuffix(f, "README.md") {
+				tempTitle = strings.Split(f, "/")[len(strings.Split(f, "/"))-2]
+				if m.GitSyncDir != "" {
+					tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), "."), tempTitle)
+				} else {
+					tempParents = deleteFromSlice(deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), "."), tempTitle)
+				}
+			} else {
+				tempTitle = strings.TrimSuffix(filepath.Base(f), ".md")
+				if m.GitSyncDir != "" {
+					tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(strings.TrimPrefix(f, m.GitSyncDir))), "/"), ".")
+				} else {
+					tempParents = deleteFromSlice(strings.Split(filepath.ToSlash(filepath.Dir(f)), "/"), ".")
+				}
+			}
+
+			if m.UseDocumentTitle == true {
+				docTitle := getDocumentTitle(f)
+				if docTitle != "" {
+					tempTitle = docTitle
+				}
+			}
+
+			md = MarkdownFile{
+				Path:    f,
+				Parents: tempParents,
+				Title:   tempTitle,
+			}
+
+			if m.Parent != "" {
+				parents := strings.Split(m.Parent, "/")
+				md.Parents = append(parents, md.Parents...)
+				md.Parents = deleteEmpty(md.Parents)
+			}
+
+			switch status {
+			case "M": // 修改
+				markdownFiles = append(markdownFiles, md)
+			case "A": // 新增
+				addMarkdownFiles = append(addMarkdownFiles, md)
+			}
+		}
+	}
+
+	var errors []error
+
+	var (
+		wg       = sync.WaitGroup{}
+		queue    = make(chan MarkdownFile)
+		addQueue = make(chan MarkdownFile)
+	)
+
+	// Process the queue
+	for worker := 0; worker < Parallelism; worker++ {
+		wg.Add(2)
+		go m.queueProcessor(&wg, &queue, &errors)
+		go m.addQueueProcessor(&wg, &addQueue, &errors)
+	}
+
+	// 删除云端文件
+	for _, markdownFile := range deleteMarkdownFiles {
+		var err error
+		_, err = markdownFile.DeletePage(m)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		fmt.Printf("删除文件：%s \n", markdownFile.FormattedPath())
+	}
+
+	// 更新文件
+	for _, markdownFile := range markdownFiles {
+
+		// Create parent pages synchronously
+		if len(markdownFile.Parents) > 0 {
+			var err error
+			markdownFile.Ancestor, err = markdownFile.FindOrCreateAncestors(m)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+		}
+
+		queue <- markdownFile
+	}
+
+	// 新增文件
+	for _, markdownFile := range addMarkdownFiles {
+		// Create parent pages synchronously
+		if len(markdownFile.Parents) > 0 {
+			var err error
+			markdownFile.Ancestor, err = markdownFile.FindOrCreateAncestors(m)
+			if err != nil {
+				errors = append(errors, err)
+				continue
+			}
+		}
+
+		addQueue <- markdownFile
+	}
+
+	close(queue)
+	close(addQueue)
+
+	wg.Wait()
+
+	return errors
+}
+
 func (m *Markdown2Confluence) queueProcessor(wg *sync.WaitGroup, queue *chan MarkdownFile, errors *[]error) {
 	defer wg.Done()
 
@@ -364,7 +469,23 @@ func (m *Markdown2Confluence) queueProcessor(wg *sync.WaitGroup, queue *chan Mar
 		if err != nil {
 			*errors = append(*errors, fmt.Errorf("Unable to upload markdown file %s: \n\t%s", markdownFile.Path, err))
 		}
-		fmt.Printf("已上传云端文件：%s %s %s\n", markdownFile.Path, markdownFile.FormattedPath(), url)
+		fmt.Printf("上传成功：%s --> %s %s\n", markdownFile.Path, markdownFile.FormattedPath(), url)
+	}
+}
+
+func (m *Markdown2Confluence) addQueueProcessor(wg *sync.WaitGroup, queue *chan MarkdownFile, errors *[]error) {
+	defer wg.Done()
+
+	for markdownFile := range *queue {
+		url, err := markdownFile.AddPage(m)
+		if err != nil {
+			*errors = append(*errors, fmt.Errorf("Unable to upload markdown file %s: \n\t%s", markdownFile.Path, err))
+		}
+		if url != "" {
+			fmt.Printf("上传成功：%s --> %s %s\n", markdownFile.Path, markdownFile.FormattedPath(), url)
+		} else {
+			fmt.Printf("上传失败：%s \n", markdownFile.Path)
+		}
 	}
 }
 
@@ -427,16 +548,16 @@ func deleteFromSlice(s []string, del string) []string {
 
 func getDocumentTitle(p string) string {
 	// Read file to check for the content
-	file_content, err := ioutil.ReadFile(p)
+	fileContent, err := ioutil.ReadFile(p)
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Convert []byte to string and print to screen
-	text := string(file_content)
+	text := string(fileContent)
 
 	// check if there is a
-	e := `^#\s+(.+)`
-	r := regexp.MustCompile(e)
+	str := `^#\s+(.+)`
+	r := regexp.MustCompile(str)
 	result := r.FindStringSubmatch(text)
 	if len(result) > 1 {
 		// assign the Title to the matching group
