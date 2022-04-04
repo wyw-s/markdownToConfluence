@@ -11,43 +11,53 @@ Push markdown files to Confluence Cloud
 
 原始项目：[go-markdown2confluence](https://github.com/justmiles/go-markdown2confluence)
 
-## Installation
+## 安装
 
 - Windows
 
-  Download [the latest release](https://github.com/justmiles/go-markdownToconfluence/releases/download/v3.1.2/go-markdown2confluence_3.1.2_windows_x86_64.tar.gz) and add to your system `PATH`
+  Download [the latest release](https://github.com/wyw-s/markdownToConfluence/releases/download/v4.1.0/markdownToConfluence_4.1.0_windows_x86_64.tar.gz) and add to your system `PATH`
 
-## Environment Variables
+## 环境变量
 
 For best practice we recommend you [authenticate using an API token](https://id.atlassian.com/manage/api-tokens).
 
-- CONFLUENCE_USERNAME - username for Confluence Cloud. When using API tokens set this to your full email.
-- CONFLUENCE_PASSWORD - API token or password for Confluence Cloud
-- CONFLUENCE_ENDPOINT - endpoint for Confluence Cloud, eg `https://mycompanyname.atlassian.net/wiki`
+| 变量名称                | 默认值                                     | 可选值 | 说明                                                         |
+| ----------------------- | ------------------------------------------ | ------ | ------------------------------------------------------------ |
+| CONFLUENCE_USERNAME     |                                            |        | Confluence Cloud的用户名。 当使用API令牌时，将此设置为您的完整电子邮件。 |
+| CONFLUENCE_PASSWORD     |                                            |        | Confluence Cloud的API令牌或密码                              |
+| CONFLUENCE_ENDPOINT     | `https://mycompanyname.atlassian.net/wiki` |        | 你的confluence地址                                           |
+| CONFLUENCE_SPACE        | ""                                         |        | 你的团队空间名                                               |
+| CONFLUENCE_PARENT       | ""                                         |        | 你需要上传到的confluence父页面                               |
+| CONFLUENCE_GIT_SYNC_DIR | ""                                         | docs   | 你本地需要同步的文件夹                                       |
+| CONFLUENCE_MODEL        | ""                                         | Git    | 是否基于GIT                                                  |
+
+> 注意：`CONFLUENCE_SPACE`、``CONFLUENCE_PARENT`、`CONFLUENCE_GIT_SYNC_DIR`的使用需要启动 `CONFLUENCE_MODEL`
 
 ## Usage
 
 ```txt
 Push markdown files to Confluence Cloud
 
-Usage:
-  markdownToconfluence [flags]
-
-Flags:
-  -d, --debug                Enable debug logging
-  -e, --endpoint string      Confluence endpoint. (Alternatively set CONFLUENCE_ENDPOINT environment variable) (default "https://mydomain.atlassian.net/wiki")
-  -x, --exclude strings      list of exclude file patterns (regex) that will be applied on markdown file paths
-  -w, --hardwraps            Render newlines as <br />
-  -h, --help                 help for markdownToconfluence
-  -m, --modified-since int   Only upload files that have modifed in the past n minutes
-      --parent string        Optional parent page to next content under
-  -p, --password string      Confluence password. (Alternatively set CONFLUENCE_PASSWORD environment variable)
-  -s, --space string         Space in which page should be created
-  -c, --comment string       Add a comment to the page (optional)
-  -t, --title string         Set the page title on upload (defaults to filename without extension)
-      --use-document-title   Will use the Markdown document title (# Title) if available
-  -u, --username string      Confluence username. (Alternatively set CONFLUENCE_USERNAME environment variable)
-      --version              version for markdownToconfluence
+Usage:                                                                                                                                                         
+  markdown2confluence [flags]                                                                                                                                  
+                                                                                                                                                               
+Flags:                                                                                                                                                         
+  -c, --comment string        (Optional) Add comment to page                                                                                                   
+  -d, --debug                 Enable debug logging                                                                                                             
+  -e, --endpoint string       Confluence endpoint. (Alternatively set CONFLUENCE_ENDPOINT environment variable) (default "https://mydomain.atlassian.net/wiki")
+  -x, --exclude strings       list of exclude file patterns (regex) for that will be applied on markdown file paths                                            
+  -g, --git-sync-dir string   Example Set the local synchronization directory                                                                                  
+  -w, --hardwraps             Render newlines as <br />                                                                                                        
+  -h, --help                  help for markdown2confluence                                                                                                     
+      --model string          Is it based on git                                                                                                               
+  -m, --modified-since int    Only upload files that have modifed in the past n minutes
+      --parent string         Optional parent page to next content under
+  -p, --password string       Confluence password. (Alternatively set CONFLUENCE_PASSWORD environment variable)
+  -s, --space string          Space in which page should be created
+  -t, --title string          Set the page title on upload (defaults to filename without extension)
+      --use-document-title    Will use the Markdown document title (# Title) if available
+  -u, --username string       Confluence username. (Alternatively set CONFLUENCE_USERNAME environment variable)
+      --version               version for markdown2confluence
 ```
 
 ## Examples
@@ -119,7 +129,7 @@ Here is an example for a ToC macro using all headlines starting at Level 2:
     ```CONFLUENCE-MACRO
     name:toc
       minLevel:2
-    ```
+```
 
     ## Section 1
 ```
@@ -133,7 +143,7 @@ The general syntax is:
     attribute:Value of Attribute
       parameter-name:Value of Parameter
       next-parameter:Value of Parameter
-    ```
+```
 ```
 
 So a fully fledged macro could look like:
@@ -148,7 +158,7 @@ So a fully fledged macro could look like:
       style:none
       type:flat
       separator:pipe
-    ```
+```
 ```
 
 Which will translate to:
