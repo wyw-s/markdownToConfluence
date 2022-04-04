@@ -9,7 +9,7 @@ Push markdown files to Confluence Cloud
 - 修复了深层级文件夹上传时，无法生成对应的文件树。
 - 添加了对git变更的支持，只上传发生变化的文件。
 
-原始项目：[go-markdownToconfluence](https://github.com/justmiles/go-markdownToconfluence)
+原始项目：[go-markdown2confluence](https://github.com/justmiles/go-markdown2confluence)
 
 ## Installation
 

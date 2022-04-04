@@ -10,4 +10,5 @@ require (
 	github.com/spf13/cobra v0.0.4
 	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/yuin/goldmark v1.1.25
+	golang.org/x/sys v0.0.0-20220403205710-6acee93ad0eb // indirect
 )
