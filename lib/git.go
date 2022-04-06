@@ -24,15 +24,15 @@ func GetMarkdownFile(m *Markdown2Confluence) []MarkdownFileFromGit {
 	fmt.Printf("当前工作目录路径：%s\n", workspaceDir)
 	fmt.Println()
 
+	// 这里必须使文件先被跟踪
+	RunGitCommand("git", "add", ".")
+
 	// 检查返回值 workspace 是否为空 为空则表明工作区没有未提交的变更
 	workspaceFiles := RunGitCommand("git", "status", "--short")
 
 	if workspaceFiles == "" {
 		return nil
 	}
-
-	// 这里必须使文件先被跟踪
-	RunGitCommand("git", "add", ".")
 
 	statusFileList := strings.Split(workspaceFiles, "\n")
 
