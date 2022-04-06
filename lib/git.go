@@ -77,7 +77,7 @@ func ProcessGitFilePath(path string, m *Markdown2Confluence) []MarkdownFileFromG
 
 			for i, v := range list {
 
-				var str = strings.Trim(v, " ")
+				var str = strings.TrimSpace(v)
 
 				st.path = str
 
@@ -96,7 +96,7 @@ func ProcessGitFilePath(path string, m *Markdown2Confluence) []MarkdownFileFromG
 
 					st.path = ConvertOctonaryUtf8(str)
 				} else if i == 0 {
-					st.path = v[strings.LastIndex(v, " "):len(v)]
+					st.path = strings.TrimSpace(str[strings.LastIndex(str, " "):len(v)])
 				}
 				if m.GitSyncDir != "" {
 					if strings.HasPrefix(st.path, m.GitSyncDir) {
@@ -119,15 +119,17 @@ func ProcessGitFilePath(path string, m *Markdown2Confluence) []MarkdownFileFromG
 
 				st.path = ConvertOctonaryUtf8(path[firstIndex+1 : lastIndex])
 			} else {
-				st.path = path[strings.LastIndex(path, " "):len(path)]
+				st.path = strings.TrimSpace(path[strings.LastIndex(path, " "):])
 			}
 			if m.GitSyncDir != "" {
 				if strings.HasPrefix(st.path, m.GitSyncDir) {
-					return append(markdownFiles, st)
+					markdownFiles = append(markdownFiles, st)
 				}
 			} else {
-				return append(markdownFiles, st)
+				markdownFiles = append(markdownFiles, st)
 			}
+
+			return markdownFiles
 		}
 	}
 	return nil
