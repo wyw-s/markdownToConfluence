@@ -11,6 +11,7 @@ import (
 )
 
 var m lib.Markdown2Confluence
+var conf lib.ConfluenceConfig
 
 func init() {
 	log.SetFlags(0)
@@ -30,7 +31,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&m.GitSyncDir, "git-sync-dir", "g", "", "Example Set the local synchronization directory")
 	rootCmd.PersistentFlags().StringVar(&m.Model, "model", "", "Is it based on git")
 	rootCmd.PersistentFlags().StringSliceVarP(&m.ExcludeFilePatterns, "exclude", "x", []string{}, "list of exclude file patterns (regex) for that will be applied on markdown file paths")
-	m.SourceEnvironmentVariables()
+	err := conf.LoadConfig()
+	if err == nil {
+		conf.SetConfig(m)
+	}
+	m.SourceEnvironmentVariables(conf)
 
 }
 

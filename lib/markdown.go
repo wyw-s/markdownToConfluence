@@ -66,40 +66,40 @@ func (m *Markdown2Confluence) CreateClient() {
 //  - CONFLUENCE_USERNAME
 //  - CONFLUENCE_PASSWORD
 //  - CONFLUENCE_ENDPOINT
-func (m *Markdown2Confluence) SourceEnvironmentVariables() {
+func (m *Markdown2Confluence) SourceEnvironmentVariables(conf ConfluenceConfig) {
 	var s string
 	s = os.Getenv("CONFLUENCE_USERNAME")
-	if s != "" {
+	if s != "" && conf.Username == "" {
 		m.Username = s
 	}
 
 	s = os.Getenv("CONFLUENCE_PASSWORD")
-	if s != "" {
+	if s != "" && conf.Password == "" {
 		m.Password = s
 	}
 
 	s = os.Getenv("CONFLUENCE_ENDPOINT")
-	if s != "" {
+	if s != "" && conf.Endpoint == "" {
 		m.Endpoint = s
 	}
 
 	s = os.Getenv("CONFLUENCE_SPACE")
-	if s != "" {
+	if s != "" && conf.Space == "" {
 		m.Space = s
 	}
 
 	s = os.Getenv("CONFLUENCE_PARENT")
-	if s != "" {
+	if s != "" && conf.Parent == "" {
 		m.Parent = s
 	}
 
 	s = os.Getenv("CONFLUENCE_GIT_SYNC_DIR")
-	if s != "" {
+	if s != "" && conf.GitSyncDir == "" {
 		m.GitSyncDir = s
 	}
 
 	s = os.Getenv("CONFLUENCE_MODEL")
-	if s != "" {
+	if s != "" && conf.Model == "" {
 		m.Model = s
 	}
 
