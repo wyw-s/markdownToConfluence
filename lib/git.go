@@ -44,6 +44,12 @@ func GetMarkdownFile(m *Markdown2Confluence) []MarkdownFileFromGit {
 		}
 	}
 
+	for i, uploadFile := range uploadFileList {
+		if !strings.HasSuffix(uploadFile.path, ".md") {
+			uploadFileList = append(uploadFileList[:i], uploadFileList[i+1:]...)
+		}
+	}
+
 	if len(uploadFileList) == 0 {
 		fmt.Println("暂无同步的markdown文件")
 		return nil
@@ -96,7 +102,7 @@ func ProcessGitFilePath(path string, m *Markdown2Confluence) []MarkdownFileFromG
 
 					st.path = ConvertOctonaryUtf8(str)
 				} else if i == 0 {
-					st.path = strings.TrimSpace(str[strings.LastIndex(str, " "):len(v)])
+					st.path = strings.TrimSpace(str[strings.LastIndex(str, " "):])
 				}
 				if m.GitSyncDir != "" {
 					if strings.HasPrefix(st.path, m.GitSyncDir) {
