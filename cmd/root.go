@@ -33,9 +33,9 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVarP(&m.ExcludeFilePatterns, "exclude", "x", []string{}, "list of exclude file patterns (regex) for that will be applied on markdown file paths")
 	err := conf.LoadConfig()
 	if err == nil {
-		conf.SetConfig(m)
+		conf.SetConfig(&m)
 	}
-	m.SourceEnvironmentVariables(conf)
+	m.SourceEnvironmentVariables(&conf)
 
 }
 

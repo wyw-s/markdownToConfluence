@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 type ConfluenceConfig struct {
@@ -22,8 +23,10 @@ func (conf *ConfluenceConfig) LoadConfig() error {
 	// 获取当前工作目录
 	workspaceDir, _ := os.Getwd()
 
+	var getFilePath = filepath.Join(workspaceDir, `.confluence.json`)
+
 	// 读取配置文件
-	buf, err := ioutil.ReadFile(workspaceDir + `/.confluence.json`)
+	buf, err := ioutil.ReadFile(getFilePath)
 
 	if err != nil {
 		fmt.Println("read file err: ", err)
@@ -39,7 +42,7 @@ func (conf *ConfluenceConfig) LoadConfig() error {
 	return nil
 }
 
-func (conf *ConfluenceConfig) SetConfig(m Markdown2Confluence) {
+func (conf *ConfluenceConfig) SetConfig(m *Markdown2Confluence) {
 	m.Username = conf.Username
 	m.Password = conf.Password
 	m.Endpoint = conf.Endpoint

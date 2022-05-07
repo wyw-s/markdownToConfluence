@@ -66,7 +66,7 @@ func (m *Markdown2Confluence) CreateClient() {
 //  - CONFLUENCE_USERNAME
 //  - CONFLUENCE_PASSWORD
 //  - CONFLUENCE_ENDPOINT
-func (m *Markdown2Confluence) SourceEnvironmentVariables(conf ConfluenceConfig) {
+func (m *Markdown2Confluence) SourceEnvironmentVariables(conf *ConfluenceConfig) {
 	var s string
 	s = os.Getenv("CONFLUENCE_USERNAME")
 	if s != "" && conf.Username == "" {
