@@ -11,3 +11,4 @@ vendor
 *.exe
 .confluence.json
 goreleaser.exe
+build.sh
