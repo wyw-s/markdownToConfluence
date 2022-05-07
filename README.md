@@ -33,6 +33,30 @@ For best practice we recommend you [authenticate using an API token](https://id.
 
 > 注意：`CONFLUENCE_SPACE`、``CONFLUENCE_PARENT`、`CONFLUENCE_GIT_SYNC_DIR`的使用需要启动 `CONFLUENCE_MODEL`
 
+## 配置文件
+
+提供了配置文件`.confluence.json`来简化你的全局环境变量配置，此配置的优先级最高，如果配置项为空则使用全局配置。
+
+```json
+
+{
+  "Username": "",
+  "Password":"",
+  "Endpoint": "",
+  "Space": "",
+  "Parent": "",
+  "GitSyncDir":"",
+  "Model": ""
+}
+
+```
+
+初次同步文档时可以配置 `Model`为 `notGit`，并使用以下命令
+
+```bash
+markdownToconfluence yourDir
+```
+
 ## Usage
 
 ```txt
